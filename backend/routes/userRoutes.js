@@ -13,11 +13,15 @@ router.post('/login', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
-    if (user && await bcrypt.compare(password, user.password)) {
+    console.log(username,password, user)
+    if (password===user.password) {
       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
+      console.log(token)
       res.json({ token, role: user.role });
     } else {
-      res.status(401).json({ message: 'Invalid credentials' });
+      console.log("Not found in the database")
+
+      res.json({ message: 'Invalid credentials' });
     }
   } catch (error) {
     console.error('Error logging in:', error);
@@ -41,8 +45,12 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+router.get('/hello', (req, res) => {
+  res.json({ message:"Hello from user routes" });
+});
+
 router.get('/user', authenticateToken, (req, res) => {
-  res.json({ role: req.user.role });
+  res.json({ role: "agent" });
 });
 
 module.exports = router;
