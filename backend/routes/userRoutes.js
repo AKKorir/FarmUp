@@ -13,16 +13,18 @@ router.post('/login', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
-    console.log(username,password, user)
-    if (password===user.password) {
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
-      console.log(token)
-      res.json({ token, role: user.role });
-    } else {
-      console.log("Not found in the database")
 
-      res.json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
     }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
+    res.json({ token, role: user.role, user });
   } catch (error) {
     console.error('Error logging in:', error);
     res.status(500).json({ message: 'Server error' });
@@ -45,9 +47,9 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-router.get('/hello', (req, res) => {
-  res.json({ message:"Hello from user routes" });
-});
+// router.get('/hello', (req, res) => {
+//   res.json({ message:"Hello from user routes" });
+// });
 
 router.get('/user', authenticateToken, (req, res) => {
   res.json({ role: "agent" });
